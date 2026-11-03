@@ -1,4 +1,4 @@
-package main.uiList;
+package view.components;
 
 import java.awt.Color;
 import java.awt.Dimension;
@@ -87,4 +87,4 @@ public class HPBar extends JPanel {
 
         g2.dispose();
     }
-}
+}

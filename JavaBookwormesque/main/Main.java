@@ -1,11 +1,12 @@
 package main;
 
-import data.classes.ScreenType;
-import data.classes.UI;
+import controller.UIHandler;
 import javax.swing.*;
-import main.gameHandlers.MasterDictionary;
-import main.gameHandlers.UIHandler;
-import main.uiList.GameUI;
+import model.word.MasterDictionary;
+import view.GameUI;
+import view.ScreenType;
+import view.UI;
+import view.UIconst;
 
 public class Main {
     public static void main(String[] args) {
@@ -15,7 +16,7 @@ public class Main {
             JFrame frame = new JFrame("Spellaria");
             frame.setResizable(false);
             frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-            frame.setSize(1280, 720);
+            frame.setSize(UIconst.WIDTH, UIconst.HEIGHT);
 
             // Uses UIHandler to manage screens, starts with the MainMenuUI
             UIHandler uiHandler = new UIHandler(frame);
@@ -41,4 +42,4 @@ Particularly, demonstration of OOP and Multithreading concepts.
 > Aim of this application is to demonstrate the game loop of said "bookwormesque" game
 and implementation of game loop found in this program will be utilized in future
 implementations.
-*/
+*/

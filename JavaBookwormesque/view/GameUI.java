@@ -1,19 +1,19 @@
-package main.uiList;
+package view;
 
-import data.classes.Enemy;
-import data.classes.Player;
-import data.classes.UI;
-import data.classes.UIconst;
 import java.awt.*;
+import java.awt.event.ActionEvent;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import javax.swing.*;
-import main.gameHandlers.BackgroundLoader;
-import main.gameHandlers.TurnHandler;
-import main.gameHandlers.WordProcessor;
+import model.entity.Enemy;
+import model.entity.Player;
+import view.components.BackgroundLoader;
+import view.components.HPBar;
+import view.components.LetterGridView;
+import view.components.OverlayPanel;
 
 public class GameUI extends JPanel implements UI {
-    private final WordProcessor wp;
+    private final LetterGridView letterGrid;
     private final JButton enterBtn;
     private final JLayeredPane layeredPane;
     private final JPanel mainPanel;
@@ -22,7 +22,6 @@ public class GameUI extends JPanel implements UI {
     private final JLabel counterLabel;
     private final JPanel middleSection;
     private final JPanel gridSection;
-    private TurnHandler turnHandler;
 
     private JLabel playerLabel;
     private JLabel enemyLabel;
@@ -44,12 +43,12 @@ public class GameUI extends JPanel implements UI {
         setMinimumSize(new Dimension(UIconst.WIDTH, UIconst.HEIGHT));
         setMaximumSize(new Dimension(UIconst.WIDTH, UIconst.HEIGHT));
 
-        wp = new WordProcessor();
+        letterGrid = new LetterGridView();
 
         // Answer row + grid
-        JPanel answerRow = wp.createAnswerRow();
+        JPanel answerRow = letterGrid.createAnswerRow();
         answerRow.setPreferredSize(new Dimension(answerRowWidth, answerRowHeight));
-        gridSection = wp.createLetterGrid(answerRow);
+        gridSection = letterGrid.createLetterGrid();
 
         // Lock grid size
         gridSection.setPreferredSize(new Dimension(gridWidth, gridHeight));
@@ -60,19 +59,6 @@ public class GameUI extends JPanel implements UI {
         enterBtn = new JButton("Enter");
         enterBtn.setPreferredSize(new Dimension(200, 40));
         enterBtn.setAlignmentX(Component.CENTER_ALIGNMENT);
-        enterBtn.addActionListener(e -> {
-            if (wp.isValidWord()) {
-                String committedWord = wp.commitSelectedAndRefill();
-                enterBtn.setBorder(UIManager.getLookAndFeel().getDefaults().getBorder("Button.border"));
-                if (turnHandler != null) {
-                    turnHandler.notifyPlayerSubmitted(committedWord);
-                }
-            } else {
-                System.out.println("Invalid word!");
-            }
-        });
-
-        wp.setBorderUpdater(valid -> updateEnterButtonBorder(valid));
 
         // Top section
         JPanel topHalf = new JPanel(new GridBagLayout());
@@ -273,11 +259,77 @@ public class GameUI extends JPanel implements UI {
     }
 
 
+    // Plays the turn overlay (fade in, hold, fade out) and calls onFinished once the overlay has been removed
+    public void showTurnOverlay(String text, Runnable onFinished) {
+        final OverlayPanel overlay = new OverlayPanel(text);
+
+        final Runnable addAndAnimate = () -> {
+            Dimension size = getLayeredPane().getSize();
+            if (size.width <= 0 || size.height <= 0) size = new Dimension(800, 600);
+            overlay.setBounds(0, 0, size.width, size.height);
+            getLayeredPane().add(overlay, JLayeredPane.MODAL_LAYER);
+            getLayeredPane().revalidate();
+            getLayeredPane().repaint();
+
+            SwingUtilities.invokeLater(() -> {
+                Dimension s2 = getLayeredPane().getSize();
+                if (s2.width > 0 && s2.height > 0) overlay.setBounds(0, 0, s2.width, s2.height);
+                overlay.requestFocusInWindow();
+            });
+
+            final int fadeInMs = 500;
+            final int holdMs = 2000;
+            final int fadeOutMs = 500;
+            final int tick = 40;
+            final int inSteps = Math.max(1, fadeInMs / tick);
+            final int outSteps = Math.max(1, fadeOutMs / tick);
+
+            Timer fadeIn = new Timer(tick, null);
+            final int[] step = {0};
+            fadeIn.addActionListener((ActionEvent e) -> {
+                step[0]++;
+                float t = Math.min(1f, (float) step[0] / inSteps);
+                overlay.setAlphas(Math.round(150 * t), Math.round(255 * t));
+                overlay.repaint();
+                if (step[0] >= inSteps) {
+                    fadeIn.stop();
+                    Timer hold = new Timer(holdMs, null);
+                    hold.setRepeats(false);
+                    hold.addActionListener(ae -> {
+                        Timer fadeOut = new Timer(tick, null);
+                        final int[] outStep = {0};
+                        fadeOut.addActionListener(ev -> {
+                            outStep[0]++;
+                            float tt = Math.min(1f, (float) outStep[0] / outSteps);
+                            overlay.setAlphas(Math.round(150 * (1f - tt)), Math.round(255 * (1f - tt)));
+                            overlay.repaint();
+                            if (outStep[0] >= outSteps) {
+                                fadeOut.stop();
+
+                                getLayeredPane().remove(overlay);
+                                getLayeredPane().revalidate();
+                                getLayeredPane().repaint();
+
+                                onFinished.run();
+                            }
+                        });
+                        fadeOut.setInitialDelay(0);
+                        fadeOut.start();
+                    });
+                    hold.start();
+                }
+            });
+            fadeIn.setInitialDelay(0);
+            fadeIn.start();
+        };
+
+        if (SwingUtilities.isEventDispatchThread()) addAndAnimate.run(); else SwingUtilities.invokeLater(addAndAnimate);
+    }
+
     // Other getters/setters
-    public void setTurnHandler(TurnHandler th) { this.turnHandler = th; }
     public JLayeredPane getLayeredPane() { return layeredPane; }
     public JButton getEnterButton() { return enterBtn; }
-    public WordProcessor getWordProcessor() { return wp; }
+    public LetterGridView getLetterGridView() { return letterGrid; }
     public JLabel getPlayerLabel() { return playerLabel; }
     public JLabel getEnemyLabel() { return enemyLabel; }
     public HPBar getPlayerHPBar() { return playerHPBar; }
@@ -288,4 +340,4 @@ public class GameUI extends JPanel implements UI {
 
     @Override 
     public void unload() { }
-}
+}

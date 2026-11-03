@@ -1,4 +1,4 @@
-package main.uiList;
+package view.components;
 
 import java.awt.Dimension;
 import java.awt.Rectangle;
@@ -6,7 +6,6 @@ import javax.swing.JLabel;
 import javax.swing.JLayeredPane;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
-import main.gameHandlers.BackgroundLoader;
 
 public class RepositionUI {
     // References to the components you want to reposition
@@ -70,4 +69,4 @@ public class RepositionUI {
             );
         }
     }
-}
+}
