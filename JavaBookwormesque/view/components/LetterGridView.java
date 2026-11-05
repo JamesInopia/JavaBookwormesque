@@ -1,8 +1,11 @@
 package view.components;
 
+import java.awt.Component;
+import java.awt.Container;
 import java.awt.Dimension;
-import java.awt.FlowLayout;
 import java.awt.GridLayout;
+import java.awt.Insets;
+import java.awt.LayoutManager;
 import java.awt.event.ActionListener;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -24,14 +27,13 @@ public class LetterGridView {
 
     // UI creation
     public JPanel createAnswerRow() {
-        answerRow = new JPanel(new FlowLayout(FlowLayout.CENTER, 4, 4));
+        answerRow = new JPanel(new AnswerRowLayout());
         answerRow.setOpaque(false);
         return answerRow;
     }
 
     public JPanel createLetterGrid() {
         gridPanel = new JPanel(new GridLayout(LetterBoard.ROWS, LetterBoard.COLS, 4, 4));
-        gridPanel.setPreferredSize(new Dimension(LetterBoard.COLS * 50, LetterBoard.ROWS * 50));
         return gridPanel;
     }
 
@@ -40,7 +42,7 @@ public class LetterGridView {
         this.tileClickHandler = handler;
     }
 
-    // Gets (or creates) the button that displays a tile
+    // Gets the button that displays a tile
     private TileButton buttonFor(Tile t) {
         TileButton btn = buttons.get(t);
         if (btn == null) {
@@ -90,5 +92,33 @@ public class LetterGridView {
         // Forgets buttons of tiles that have been removed from the board
         buttons.keySet().retainAll(live);
         gridPanel.revalidate(); gridPanel.repaint();
+    }
+
+    // Lays the answerRow tiles out in one centred line
+    private static class AnswerRowLayout implements LayoutManager {
+        private static final int MAX_TILE = 50, GAP = 4;
+
+        @Override public void addLayoutComponent(String name, Component comp) { }
+        @Override public void removeLayoutComponent(Component comp) { }
+        @Override public Dimension preferredLayoutSize(Container parent) { return new Dimension(0, MAX_TILE); }
+        @Override public Dimension minimumLayoutSize(Container parent) { return new Dimension(0, 0); }
+
+        @Override
+        public void layoutContainer(Container parent) {
+            int n = parent.getComponentCount();
+            if (n == 0) return;
+
+            Insets in = parent.getInsets();
+            int availW = parent.getWidth() - in.left - in.right;
+            int availH = parent.getHeight() - in.top - in.bottom;
+            int size = Math.max(1, Math.min(MAX_TILE, Math.min(availH, (availW - GAP * (n - 1)) / n)));
+
+            int x = in.left + (availW - (size * n + GAP * (n - 1))) / 2;
+            int y = in.top + (availH - size) / 2;
+            for (Component c : parent.getComponents()) {
+                c.setBounds(x, y, size, size);
+                x += size + GAP;
+            }
+        }
     }
 }

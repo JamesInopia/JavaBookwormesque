@@ -1,18 +1,21 @@
 package controller;
 
-import java.util.List;
 import javax.swing.*;
 import model.entity.Player;
+import model.level.Level;
+import model.level.LevelCatalog;
 import model.word.LetterBoard;
 import view.GameUI;
+import view.LevelSelectUI;
 import view.MainMenuUI;
 import view.ScreenType;
 import view.UI;
 import view.components.TransitionUI;
 
 public class UIHandler {
-    private final JFrame frame;   // The main window
-    private UI currentUI;         // Currently active UI
+    private final JFrame frame;
+    private UI currentUI;
+    private Level selectedLevel;
 
     // References main window
     public UIHandler(JFrame frame) {
@@ -29,12 +32,18 @@ public class UIHandler {
         switch (screen) {
             case MENU -> nextUI = new MainMenuUI(this);
 
+            case LEVEL_SELECT -> nextUI = new LevelSelectUI(this);
+
             case GAME -> {
+                if (selectedLevel == null) {
+                    throw new IllegalStateException("No level selected, use startLevel(levelNumber).");
+                }
                 gameUI = new GameUI();
                 nextUI = gameUI;
 
                 Player player = new Player();
-                handler = new TurnHandler(gameUI, List.of("Enemy"), player);
+                handler = new TurnHandler(gameUI, new WaveHandler(selectedLevel), player,
+                        () -> setScreen(ScreenType.LEVEL_SELECT));
 
                 WordProcessor wordProcessor = new WordProcessor(new LetterBoard(), gameUI);
                 wordProcessor.setTurnHandler(handler);
@@ -84,6 +93,12 @@ public class UIHandler {
             timer.start();
             currentUI = nextUI;
         }
+    }
+
+    // Starts the chosen level from its first wave
+    public void startLevel(int levelNumber) {
+        selectedLevel = LevelCatalog.create(levelNumber);
+        setScreen(ScreenType.GAME);
     }
 
     // Getter which passes the currentUI

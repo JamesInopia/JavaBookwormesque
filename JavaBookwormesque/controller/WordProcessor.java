@@ -24,6 +24,10 @@ public class WordProcessor {
         view.setTileClickHandler(this::onTileClicked);
 
         ui.getEnterButton().addActionListener(e -> {
+            if (turnHandler != null && !turnHandler.isWaitingForPlayer()) {
+                System.out.println("Not the player's turn!");
+                return;
+            }
             if (board.isValidWord()) {
                 String committedWord = commitSelectedAndRefill();
                 ui.updateEnterButtonBorder(false);

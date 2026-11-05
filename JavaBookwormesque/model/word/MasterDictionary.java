@@ -7,8 +7,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ThreadLocalRandom;
 
 public final class MasterDictionary {
-    private static final String EXTERNAL_PATH = "data/wordList/masterWordList.txt";
-    private static final String CLASSPATH_RESOURCE = "/data/wordList/masterWordList.txt";
+    private static final String EXTERNAL_PATH = "public/wordList/masterWordList.txt";
+    private static final String CLASSPATH_RESOURCE = "/public/wordList/masterWordList.txt";
     private static volatile Set<String> masterSet = Collections.emptySet();
     private static volatile Map<Integer, List<String>> byLength = Collections.emptyMap();
     private static volatile boolean ready = false;

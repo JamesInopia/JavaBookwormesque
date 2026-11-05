@@ -36,7 +36,7 @@ public class MainMenuUI extends JPanel implements UI {
         }
 
         //Adds functionality to the buttons
-        playBtn.addActionListener(e -> uiHandler.setScreen(ScreenType.GAME));
+        playBtn.addActionListener(e -> uiHandler.setScreen(ScreenType.LEVEL_SELECT));
         quitBtn.addActionListener(e -> System.exit(0));
     }
 

@@ -34,12 +34,3 @@ public class Main {
         });
     }
 }
-
-/*
-PROGRAMMING NOTE:
-> Due to time constraints, this application will simply be for demonstration purposes.
-Particularly, demonstration of OOP and Multithreading concepts.
-> Aim of this application is to demonstrate the game loop of said "bookwormesque" game
-and implementation of game loop found in this program will be utilized in future
-implementations.
-*/

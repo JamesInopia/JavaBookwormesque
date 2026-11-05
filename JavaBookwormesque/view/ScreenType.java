@@ -4,5 +4,6 @@ package view;
 public enum ScreenType {
     GAME,
     MENU,
+    LEVEL_SELECT,
     SETTINGS
-}
+}

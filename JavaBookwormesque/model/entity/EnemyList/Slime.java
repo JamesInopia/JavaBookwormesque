@@ -6,7 +6,7 @@ import model.entity.Move;
 
 public class Slime extends Enemy {
     public Slime() {
-        super("Slime", "enemy", 25, "data/entityImages/slime.png",
+        super("Slime", "enemy", 25, "public/entityImages/slime.png",
               Arrays.asList(
                   new Move("Tackle", 5)
               )

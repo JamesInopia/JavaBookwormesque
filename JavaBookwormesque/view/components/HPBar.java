@@ -31,7 +31,7 @@ public class HPBar extends JPanel {
     // Updates HP using smooth animation
     public void setHPAnimated(int newHP) {
         targetHP = Math.max(0, Math.min(newHP, maxHP));
-        final int step = (currentHP - targetHP) / 20; // 20 steps
+        final int step = (targetHP - currentHP) / 20; // 20 steps
         final int actualStep = (step == 0) ? (currentHP > targetHP ? -1 : 1) : step;
 
         Timer timer = new Timer(15, e -> {
@@ -87,4 +87,4 @@ public class HPBar extends JPanel {
 
         g2.dispose();
     }
-}
+}

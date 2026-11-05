@@ -5,12 +5,18 @@ public class Player {
     final private String name = "Hero";
     final private int maxHP = 50;
     private int currentHP = maxHP;
-    private final String imagePath = "data/entityImages/player.png";
+    private final String imagePath = "public/entityImages/player.png";
 
     // Takes damage based on received damgage from enemy move
     public void takeDamage(int dmg) {
         currentHP = Math.max(0, currentHP - dmg);
         System.out.println(name + " now has " + currentHP + " HP left.");
+    }
+
+    // Restores HP, but never above max HP
+    public void heal(int amount) {
+        currentHP = Math.min(maxHP, currentHP + Math.max(0, amount));
+        System.out.println(name + " healed " + amount + " and now has " + currentHP + " HP.");
     }
 
     // Getters
