@@ -9,6 +9,10 @@ import java.util.concurrent.ThreadLocalRandom;
 public final class MasterDictionary {
     private static final String EXTERNAL_PATH = "public/wordList/masterWordList.txt";
     private static final String CLASSPATH_RESOURCE = "/public/wordList/masterWordList.txt";
+    private static final String GENERATE_EXTERNAL_PATH = "public/wordList/generateWordList.txt";
+    private static final String GENERATE_CLASSPATH_RESOURCE = "/public/wordList/generateWordList.txt";
+
+    // masterSet (from masterWordList) is only used to check which words are correct, byLength (from generateWordList) is only used to generate the words for the letter grid
     private static volatile Set<String> masterSet = Collections.emptySet();
     private static volatile Map<Integer, List<String>> byLength = Collections.emptyMap();
     private static volatile boolean ready = false;
@@ -31,12 +35,36 @@ public final class MasterDictionary {
                     line = line.trim().toLowerCase();
                     if (line.isEmpty() || line.startsWith("#")) continue;
                     set.add(line);
-                    map.computeIfAbsent(line.length(), k -> new ArrayList<>()).add(line);
                 }
             } catch (FileNotFoundException fnf) {
                 System.err.println("MasterDictionary: master list not found: " + fnf.getMessage());
             } catch (Exception ex) {
                 System.err.println("MasterDictionary load error: " + ex.getMessage());
+            }
+
+            // generateWordList is only read, never written to
+            int generated = 0, notInMaster = 0;
+            try (InputStream in = openGenerateStream();
+                 BufferedReader br = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
+                String line;
+                while ((line = br.readLine()) != null) {
+                    line = line.trim().toLowerCase();
+                    if (line.isEmpty() || line.startsWith("#")) continue;
+                    map.computeIfAbsent(line.length(), k -> new ArrayList<>()).add(line);
+                    generated++;
+                    if (!set.contains(line)) notInMaster++;
+                }
+            } catch (FileNotFoundException fnf) {
+                System.err.println("MasterDictionary: generate list not found: " + fnf.getMessage());
+            } catch (Exception ex) {
+                System.err.println("MasterDictionary generate list load error: " + ex.getMessage());
+            }
+
+            if (generated == 0) {
+                System.err.println("MasterDictionary: generateWordList has no words, the letter grid will use random letters until it does.");
+            } else if (!set.isEmpty() && notInMaster > 0) {
+                System.err.println("MasterDictionary: " + notInMaster + " of " + generated
+                        + " generateWordList words are not in masterWordList, so they can't be submitted as correct words.");
             }
 
             masterSet = Collections.unmodifiableSet(set);
@@ -60,11 +88,21 @@ public final class MasterDictionary {
 
     // Opens masterWordList
     private static InputStream openMasterStream() throws IOException {
-        InputStream in = MasterDictionary.class.getResourceAsStream(CLASSPATH_RESOURCE);
+        return openWordList(CLASSPATH_RESOURCE, EXTERNAL_PATH, "masterWordList");
+    }
+
+    // Opens generateWordList
+    private static InputStream openGenerateStream() throws IOException {
+        return openWordList(GENERATE_CLASSPATH_RESOURCE, GENERATE_EXTERNAL_PATH, "generateWordList");
+    }
+
+    // Opens a word list from the classpath, or from its file path if it isn't on the classpath
+    private static InputStream openWordList(String classpathResource, String externalPath, String name) throws IOException {
+        InputStream in = MasterDictionary.class.getResourceAsStream(classpathResource);
         if (in != null) return in;
-        File f = new File(EXTERNAL_PATH);
+        File f = new File(externalPath);
         if (f.exists()) return new FileInputStream(f);
-        throw new FileNotFoundException("masterWordList not found on classpath or at " + EXTERNAL_PATH);
+        throw new FileNotFoundException(name + " not found on classpath or at " + externalPath);
     }
 
     // Adds ready if the MasterDictionary has completely loaded
