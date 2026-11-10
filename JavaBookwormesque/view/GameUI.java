@@ -71,13 +71,15 @@ public class GameUI extends JPanel implements UI {
 
     // Enemies
     private static final double ENEMY_BOX_W = 0.123, ENEMY_BOX_H = 0.25;
-    private static final double[][][] FORMATIONS = {
-        { { 0.804, 0.534 } },
-        { { 0.696, 0.472 }, { 0.849, 0.529 } },
-        { { 0.585, 0.424 }, { 0.738, 0.473 }, { 0.891, 0.529 } }
-    };
-    // For waves bigger than the mockup shows: every extra enemy continues the staircase to the left/up by this much
-    private static final double EXTRA_STEP_X = 0.153, EXTRA_STEP_Y = 0.0525;
+
+    // Enemies are kept to the right of the tile box 
+    private static final double ENEMY_GROUP_CX = 0.805;
+    private static final double ENEMY_MIN_CX = 0.675;
+    private static final double ENEMY_FEET_FRONT = 0.54;
+    private static final double ENEMY_STEP_Y = 0.04;
+    
+    // Horizontal gap between neighbouring enemies, indexed by group size (index 0 and 1 unused)
+    private static final double[] ENEMY_STEP_X_BY_COUNT = { 0, 0, 0.16, 0.125 };
 
     private static final int HP_BAR_HEIGHT = 20, HP_BAR_GAP = 6;
 
@@ -252,13 +254,19 @@ public class GameUI extends JPanel implements UI {
         if (bar != null) bar.setBounds(x, y + size.height + HP_BAR_GAP, size.width, HP_BAR_HEIGHT);
     }
 
-    // Spot of an enemy on screen
+    // Spot of an enemy: a staircase going up-left from the front enemy, with the whole group centred on ENEMY_GROUP_CX
     private double[] enemySpot(int slot, int groupSize) {
-        if (groupSize <= FORMATIONS.length) {
-            return FORMATIONS[groupSize - 1][groupSize - 1 - slot];
+        int fromFront = groupSize - 1 - slot;   // 0 = front (rightmost) enemy
+        double stepX = 0;
+        if (groupSize > 1) {
+            stepX = groupSize < ENEMY_STEP_X_BY_COUNT.length
+                ? ENEMY_STEP_X_BY_COUNT[groupSize]
+                : Math.min(ENEMY_STEP_X_BY_COUNT[ENEMY_STEP_X_BY_COUNT.length - 1],
+                           2 * (ENEMY_GROUP_CX - ENEMY_MIN_CX) / (groupSize - 1));
         }
-        double[] rightmost = FORMATIONS[FORMATIONS.length - 1][FORMATIONS.length - 1];
-        return new double[] { rightmost[0] - slot * EXTRA_STEP_X, rightmost[1] - slot * EXTRA_STEP_Y };
+        double cx = ENEMY_GROUP_CX + ((groupSize - 1) / 2.0 - fromFront) * stepX;
+        double feetY = ENEMY_FEET_FRONT - fromFront * ENEMY_STEP_Y;
+        return new double[] { cx, feetY };
     }
 
     // One enemy of a wave of groupSize enemies

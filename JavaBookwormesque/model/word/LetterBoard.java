@@ -47,7 +47,7 @@ public class LetterBoard {
         return true;
     }
 
-    // Spawn letters using partition logic
+    // Spawn letters using partition logic, then scatter them across the empty slots
     public void spawnUntilFull() {
         int emptySlots = 0;
         for (int c = 0; c < COLS; c++) {
@@ -56,22 +56,23 @@ public class LetterBoard {
             }
         }
 
-        // Generate new letters exactly for empty slots
-        List<List<Character>> newBlocks = generateLettersFromPartition(emptySlots);
+        // Still generate by partition so the words are guaranteed to be formable
+        List<Character> newLetters = new ArrayList<>();
+        for (List<Character> block : generateLettersFromPartition(emptySlots)) {
+            newLetters.addAll(block);
+        }
 
-        // Place letters into empty slots sequentially
-        for (List<Character> block : newBlocks) {
-            for (char c : block) {
-                outer:
-                for (int col = 0; col < COLS; col++) {
-                    for (int row = ROWS - 1; row >= 0; row--) {
-                        if (columns[col][row] == null) {
-                            Tile t = new Tile(c, col, row);
-                            t.setSelected(false);
-                            columns[col][row] = t;
-                            break outer;
-                        }
-                    }
+        // Scatter the letters so a word's letters no longer sit next to each other
+        Collections.shuffle(newLetters, rnd);
+
+        // Place letters into empty slots
+        int i = 0;
+        for (int col = 0; col < COLS && i < newLetters.size(); col++) {
+            for (int row = ROWS - 1; row >= 0 && i < newLetters.size(); row--) {
+                if (columns[col][row] == null) {
+                    Tile t = new Tile(newLetters.get(i++), col, row);
+                    t.setSelected(false);
+                    columns[col][row] = t;
                 }
             }
         }
