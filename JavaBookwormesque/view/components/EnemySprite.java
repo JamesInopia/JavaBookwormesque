@@ -24,6 +24,11 @@ public class EnemySprite extends JLabel {
     private boolean targeted = false;
     private boolean defeated = false;
 
+    // Icon floating above the enemy that shows what it is going to do next
+    private final JLabel intentLabel = new JLabel();
+    private Image intentSource;
+    private int intentSize = -1;
+
     public EnemySprite(Enemy enemy, Image source, HPBar hpBar, int slot, int groupSize, Consumer<Enemy> onClick) {
         this.enemy = enemy;
         this.source = source;
@@ -49,6 +54,22 @@ public class EnemySprite extends JLabel {
         return d;
     }
 
+    // Sets the intent icon, GameUI calls fitIntent to size it
+    public void setIntent(Image icon) {
+        intentSource = icon;
+        intentSize = -1;
+        intentLabel.setVisible(icon != null && !defeated);
+    }
+
+    // Scales the intent icon to a square of the given size
+    public void fitIntent(int size) {
+        if (intentSource == null || size <= 0) return;
+        if (size != intentSize) {
+            intentLabel.setIcon(SpriteScaler.fit(intentSource, size, size));
+            intentSize = size;
+        }
+    }
+
     // Only worth showing as clickable when there is more than one enemy to choose from
     public void setTargetable(boolean targetable) {
         setCursor(targetable ? Cursor.getPredefinedCursor(Cursor.HAND_CURSOR) : Cursor.getDefaultCursor());
@@ -62,6 +83,7 @@ public class EnemySprite extends JLabel {
 
     public void markDefeated() {
         defeated = true;
+        intentLabel.setVisible(false);
         setTargeted(false);
         setTargetable(false);
     }
@@ -82,6 +104,7 @@ public class EnemySprite extends JLabel {
     // Getters
     public Enemy getEnemy() { return enemy; }
     public HPBar getHPBar() { return hpBar; }
+    public JLabel getIntentLabel() { return intentLabel; }
     public int getSlot() { return slot; }
     public int getGroupSize() { return groupSize; }
     public boolean isTargeted() { return targeted; }

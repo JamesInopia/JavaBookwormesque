@@ -5,16 +5,21 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import model.battle.MoveKnowledge;
 import model.entity.Enemy;
+import model.entity.Move;
 import model.entity.Player;
 import view.components.BackgroundLoader;
 import view.components.EnemySprite;
 import view.components.HPBar;
 import view.components.LetterGridView;
+import view.components.MoveGuidePanel;
 import view.components.OverlayPanel;
 import view.components.SpriteScaler;
 import view.components.TimerTab;
@@ -30,6 +35,7 @@ public class GameUI extends JPanel implements UI {
     private final JSeparator divider;
     private final JPanel leftPanel;
     private final JPanel rightPanel;
+    private final MoveGuidePanel moveGuide;
     private final JPanel gridBox;
     private final JPanel gridSection;
     private final JPanel answerStrip;
@@ -46,6 +52,10 @@ public class GameUI extends JPanel implements UI {
     private final List<EnemySprite> enemySprites = new ArrayList<>();
     private Enemy target;
     private Consumer<Enemy> enemyClickHandler;
+
+    // Which enemy moves are already known (decides intent icons and the move guide), and loaded icon pictures
+    private MoveKnowledge moveKnowledge;
+    private final Map<String, Image> iconCache = new HashMap<>();
 
     private static final Integer ENEMY_LAYER = JLayeredPane.PALETTE_LAYER + 1;
     private static final Integer ANSWER_LAYER = JLayeredPane.PALETTE_LAYER + 2;
@@ -83,6 +93,10 @@ public class GameUI extends JPanel implements UI {
 
     private static final int HP_BAR_HEIGHT = 20, HP_BAR_GAP = 6;
 
+    // Intent icon above each enemy: its size (share of the screen width) and the gap above the picture
+    private static final double INTENT_ICON_SIZE = 0.032;
+    private static final int INTENT_GAP = 0;
+
     // Sets up battle screen
     public GameUI() {
         // Enforce consistent resolution
@@ -111,7 +125,8 @@ public class GameUI extends JPanel implements UI {
 
         // Empty side panels, reserved for future content
         leftPanel = createSidePanel();
-        rightPanel = createSidePanel();
+        moveGuide = new MoveGuidePanel();   // right side: move guide of the targeted enemy
+        rightPanel = moveGuide;
 
         divider = new JSeparator(SwingConstants.HORIZONTAL);
 
@@ -243,6 +258,12 @@ public class GameUI extends JPanel implements UI {
             Dimension d = sprite.fitTo((int) (w * ENEMY_BOX_W), (int) (h * ENEMY_BOX_H));
             double[] spot = enemySpot(sprite.getSlot(), sprite.getGroupSize());
             placeByFeet(sprite, sprite.getHPBar(), spot[0], spot[1], d, w, h);
+
+            // Intent icon, centred right above the enemy
+            int iconSize = (int) Math.round(w * INTENT_ICON_SIZE);
+            sprite.fitIntent(iconSize);
+            sprite.getIntentLabel().setBounds(sprite.getX() + (sprite.getWidth() - iconSize) / 2,
+                    sprite.getY() - iconSize - INTENT_GAP, iconSize, iconSize);
         }
     }
 
@@ -282,6 +303,8 @@ public class GameUI extends JPanel implements UI {
 
         layeredPane.add(sprite, ENEMY_LAYER);
         layeredPane.add(hpBar, JLayeredPane.PALETTE_LAYER);
+        layeredPane.add(sprite.getIntentLabel(), ENEMY_LAYER);
+        sprite.setIntent(intentIconFor(enemy));
         enemySprites.add(sprite);
         updateTargetHighlights();
     }
@@ -302,6 +325,7 @@ public class GameUI extends JPanel implements UI {
         for (EnemySprite sprite : enemySprites) {
             layeredPane.remove(sprite);
             layeredPane.remove(sprite.getHPBar());
+            layeredPane.remove(sprite.getIntentLabel());
         }
         enemySprites.clear();
         layeredPane.repaint();
@@ -311,6 +335,49 @@ public class GameUI extends JPanel implements UI {
     public void setTarget(Enemy enemy) {
         this.target = enemy;
         updateTargetHighlights();
+        refreshMoveGuide();
+    }
+
+    // Tells the view which enemy moves the player has already seen
+    public void setMoveKnowledge(MoveKnowledge knowledge) {
+        this.moveKnowledge = knowledge;
+        refreshMoveInfo();
+    }
+
+    // Redraws everything that depends on known moves: the intent icon above every enemy and the move guide
+    public void refreshMoveInfo() {
+        for (EnemySprite sprite : enemySprites) {
+            sprite.setIntent(intentIconFor(sprite.getEnemy()));
+        }
+        refreshMoveGuide();
+        repositionUI();
+    }
+
+    // The icon of what the enemy will do next, or "?" if the player has never seen that move used
+    private Image intentIconFor(Enemy enemy) {
+        Move next = enemy.getNextMove();
+        boolean known = moveKnowledge != null && next != null && moveKnowledge.isRevealed(enemy, next);
+        return loadIcon(known ? next.getIconPath() : Move.UNKNOWN_ICON);
+    }
+
+    // Move guide lists every move of the targeted enemy: icon and name if known, "?" if not
+    private void refreshMoveGuide() {
+        if (target == null) {
+            moveGuide.clearGuide();
+            return;
+        }
+        List<MoveGuidePanel.Entry> entries = new ArrayList<>();
+        for (Move m : target.getMoves()) {
+            boolean known = moveKnowledge != null && moveKnowledge.isRevealed(target, m);
+            if (known) entries.add(new MoveGuidePanel.Entry(loadIcon(m.getIconPath()), m.getName()));
+            else entries.add(new MoveGuidePanel.Entry(loadIcon(Move.UNKNOWN_ICON), "?"));
+        }
+        moveGuide.setGuide(target.getName(), entries);
+    }
+
+    // Loads a picture once and reuses it
+    private Image loadIcon(String path) {
+        return iconCache.computeIfAbsent(path, p -> new ImageIcon(p).getImage());
     }
 
     // Controller registers what should happen when an enemy is clicked
@@ -342,6 +409,7 @@ public class GameUI extends JPanel implements UI {
                 Timer t = new Timer(500, e -> {
                     layeredPane.remove(sprite);
                     layeredPane.remove(sprite.getHPBar());
+                    layeredPane.remove(sprite.getIntentLabel());
                     enemySprites.remove(sprite);
                     layeredPane.repaint();
                 });

@@ -3,6 +3,7 @@ package controller;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import model.battle.MoveKnowledge;
 import model.entity.Enemy;
 import model.entity.Player;
 import model.level.Level;
@@ -14,6 +15,9 @@ public class WaveHandler {
 
     private final Level level;
     private List<Enemy> enemies = new ArrayList<>();
+
+    // Which enemy moves the player has seen so far in this level (starts empty every level)
+    private final MoveKnowledge moveKnowledge = new MoveKnowledge();
 
     public WaveHandler(Level level) {
         if (level == null || !level.hasWaves()) {
@@ -63,6 +67,7 @@ public class WaveHandler {
     // Getters
     public List<Enemy> getEnemies() { return Collections.unmodifiableList(enemies); }
     public Level getLevel() { return level; }
+    public MoveKnowledge getMoveKnowledge() { return moveKnowledge; }
     public int getCurrentWave() { return level.getCurrentWave(); }
     public int getMaxWave() { return level.getMaxWave(); }
     public boolean isLastWave() { return level.isLastWave(); }

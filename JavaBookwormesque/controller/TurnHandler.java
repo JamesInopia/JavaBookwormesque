@@ -5,6 +5,7 @@ import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 import model.battle.ApplyDamage;
 import model.entity.Enemy;
+import model.entity.Move;
 import model.entity.Player;
 import view.GameUI;
 
@@ -37,6 +38,7 @@ public class TurnHandler {
         this.onBattleEnd = onBattleEnd;
         this.waitingForPlayer = false;
         ui.setEnemyClickHandler(this::selectTarget);
+        ui.setMoveKnowledge(waves.getMoveKnowledge());
     }
 
     // Starts the battle between player and enemy
@@ -273,7 +275,10 @@ public class TurnHandler {
     private boolean performEnemyAction(Enemy enemy) {
         if (!enemy.isAlive()) return true;
 
-        enemy.performMove(player);
+        // Using a move reveals it: intent icons and the move guide update right away
+        Move used = enemy.performMove(player);
+        waves.getMoveKnowledge().reveal(enemy, used);
+        ui.refreshMoveInfo();
 
         ui.updatePlayerHP(player.getCurrentHP());
 
